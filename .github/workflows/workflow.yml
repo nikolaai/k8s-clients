@@ -17,12 +17,9 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    # strategy:
-    #   matrix:
-    #     kubectl-version: [ "1.26", "1.27", "1.28" ]
     strategy:
       matrix:
-        kubectl-version: [ "$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt | cut -d. -f1,2 | sed 's/v//')", "$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable-$(echo $(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt | cut -d. -f1,2 | awk -F. '{print $1"."$2-1}' | sed 's/v//')).txt)", "$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable-$(echo $(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt | cut -d. -f1,2 | awk -F. '{print $1"."$2-2}' | sed 's/v//')).txt)" ]
+        kubectl-version: [ "1.26", "1.27", "1.28" ]
 
     steps:
       - name: Checkout repository
