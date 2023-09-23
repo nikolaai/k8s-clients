@@ -32,10 +32,11 @@ jobs:
         run: |
           TAG=$(date +%y%m%d.%H%M%S)
           echo "TAG=$TAG" >> "$GITHUB_ENV"
-          echo "IMAGE_REF=ghcr.io/$GITHUB_REPOSITORY:${TAG}" >> "$GITHUB_ENV"
+          echo "IMAGE_REF=ghcr.io/$GITHUB_REPOSITORY-${{ matrix.kubectl-version }}:${TAG}" >> "$GITHUB_ENV"
+          echo "IMAGE_LATEST=ghcr.io/$GITHUB_REPOSITORY-${{ matrix.kubectl-version }}:latest" >> "$GITHUB_ENV"
       
       - name: Build Docker image
-        run: docker build -t ghcr.io/$GITHUB_REPOSITORY:${{ env.TAG }} -t ghcr.io/$GITHUB_REPOSITORY:latest --progress=plain --build-arg KUBECTL_VERSION=${{ matrix.kubectl-version }} .
+        run: docker build -t ${{ env.IMAGE_REF }} -t ${{ env.IMAGE_LATEST }} --progress=plain --build-arg KUBECTL_VERSION=${{ matrix.kubectl-version }} .
 
       - name: Scan Docker image with trivy
         uses: aquasecurity/trivy-action@master
@@ -63,7 +64,6 @@ jobs:
 
       - name: Push Docker image to GitHub Container Registry
         run: |
-          IMAGE_TAG="ghcr.io/$GITHUB_REPOSITORY:${{ env.TAG }}"
-          docker push $IMAGE_TAG
-          docker push ghcr.io/$GITHUB_REPOSITORY:latest
+          docker push ${{ env.IMAGE_REF }}
+          docker push ${{ env.IMAGE_LATEST }}
 
