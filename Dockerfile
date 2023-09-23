@@ -12,17 +12,17 @@ ARG KUBECTL_VERSION
 
 # get latest stable patch version for KUBECTL_VERSION
 
-# # Download and install kubectl
-# RUN LATEST_PATCH_KUBECTL_VERSION=$(curl -sL https://dl.k8s.io/release/stable-$KUBECTL_VERSION.txt) \
-#     && curl -LO "https://dl.k8s.io/release/${LATEST_PATCH_KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
-#     && chmod +x kubectl \
-#     && mv kubectl /usr/local/bin/
+# Download and install kubectl
+RUN LATEST_PATCH_KUBECTL_VERSION=$(curl -sL https://dl.k8s.io/release/stable-$KUBECTL_VERSION.txt) \
+    && curl -LO "https://dl.k8s.io/release/${LATEST_PATCH_KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
+    && chmod +x kubectl \
+    && mv kubectl /usr/local/bin/
 
-# # Install Helm
-# RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
-#     && chmod 700 get_helm.sh \
-#     && ./get_helm.sh \
-#     && rm get_helm.sh
+# Install Helm
+RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+    && chmod 700 get_helm.sh \
+    && ./get_helm.sh \
+    && rm get_helm.sh
 
 # Switch to the "runner" user
 USER runner
