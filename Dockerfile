@@ -2,7 +2,7 @@
 FROM alpine:latest
 
 # Install the required packages (curl, kubectl, and helm)
-RUN apk --no-cache add curl bash openssl
+RUN apk --no-cache add curl bash openssl git
 
 # Create a new user named "runner" with UID 1000
 RUN adduser -D -u 1000 runner
