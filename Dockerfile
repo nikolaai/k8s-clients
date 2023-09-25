@@ -24,9 +24,6 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
     && ./get_helm.sh \
     && rm get_helm.sh
 
-# Install helm push plugin
-RUN helm plugin install https://github.com/chartmuseum/helm-push
-
 # Switch to the "runner" user
 USER runner
 
