@@ -1,5 +1,5 @@
 # Use the Alpine Linux base image
-FROM alpine:3.18
+FROM alpine:3.19
 
 # Install the required packages (curl, kubectl, and helm)
 RUN apk --no-cache add curl bash openssl
