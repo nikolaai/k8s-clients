@@ -1,10 +1,12 @@
 # Use the Alpine Linux base image
-FROM alpine:3.20
+FROM alpine:3.20.2
 
 # Install the required packages (curl, kubectl, and helm)
+# hadolint ignore=DL3018
 RUN apk --no-cache add curl bash openssl
 
 # Create a new user named "runner" with UID 1000
+# hadolint ignore=DL3059
 RUN adduser -D -u 1000 runner
 
 # Set the kubectl version using a build argument
