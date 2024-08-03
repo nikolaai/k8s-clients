@@ -82,6 +82,8 @@ jobs:
           push: true
           tags: |
             ${{ env.CONTAINER_IMAGE }}-dev:${{ env.TAG }}
+          build-args: |
+            KUBECTL_VERSION=${{ matrix.kubectl-version }}
         if: github.ref != 'refs/heads/main'
 
       - name: Scan Docker image with trivy
@@ -103,6 +105,8 @@ jobs:
           tags: |
             ${{ env.CONTAINER_IMAGE }}:${{ env.TAG }}
             ${{ env.CONTAINER_IMAGE }}:latest
+          build-args: |
+            KUBECTL_VERSION=${{ matrix.kubectl-version }}
         if: github.ref == 'refs/heads/main'
 
 
