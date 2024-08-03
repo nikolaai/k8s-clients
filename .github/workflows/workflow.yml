@@ -11,7 +11,7 @@ on:
 env:
   DOCKER_BUILDKIT: 1
   CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY}}
-  CONTAINER_IMAGE: ${{ vars.CONTAINER_REGISTRY }}/${{ github.repository }}
+  # CONTAINER_IMAGE: ${{ vars.CONTAINER_REGISTRY }}/${{ github.repository }}
   DOCKERFILE: Dockerfile
 
 jobs:
@@ -72,6 +72,7 @@ jobs:
         run: |
           TAG=$(date +%Y.%m%d.%H%M%S)
           echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "CONTAINER_IMAGE=${{ vars.CONTAINER_REGISTRY }}/${{ github.repository }}-${{ matrix.kubectl-version }}" >> "$GITHUB_ENV"
       
       - name: Build Docker image
         uses: docker/build-push-action@v6
