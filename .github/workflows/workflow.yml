@@ -5,14 +5,14 @@ on:
     branches:
       - main
   pull_request:
-    # types: [ closed ]
     branches:
       - main
-  # schedule:
-    # - cron: '0 5 * * 6/2' # Run every two weeks on Saturday at 5:00 UTC
 
 env:
   DOCKER_BUILDKIT: 1
+  CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY}}
+  # CONTAINER_IMAGE: ${{ vars.CONTAINER_REGISTRY }}/${{ github.repository }}
+  DOCKERFILE: Dockerfile
 
 jobs:
   hadolint:
@@ -25,10 +25,10 @@ jobs:
       - name: Run hadolint
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          dockerfile: ./Dockerfile
+          dockerfile: ${{ env.DOCKERFILE }}
           format: sarif
           output-file: hadolint-results.sarif
-          no-fail: true
+          failure-threshold: error
 
       - name: Upload analysys results to GitHub
         uses: github/codeql-action/upload-sarif@v3
@@ -40,54 +40,89 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        kubectl-version: [ "1.26", "1.27", "1.28" ]
+        kubectl-version: [ "1.28", "1.29", "1.30" ]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        # with:
-        #   ref: main
-      
-      - name: Set Docker image tag
-        id: set-tag
-        run: |
-          TAG=$(date +%y%m%d.%H%M%S)
-          echo "TAG=$TAG" >> "$GITHUB_ENV"
-          echo "IMAGE_REF=ghcr.io/$GITHUB_REPOSITORY-${{ matrix.kubectl-version }}:${TAG}" >> "$GITHUB_ENV"
-          echo "IMAGE_LATEST=ghcr.io/$GITHUB_REPOSITORY-${{ matrix.kubectl-version }}:latest" >> "$GITHUB_ENV"
-      
-      - name: Build Docker image
-        run: docker build -t ${{ env.IMAGE_REF }} -t ${{ env.IMAGE_LATEST }} --progress=plain --build-arg KUBECTL_VERSION=${{ matrix.kubectl-version }} .
 
-      - name: Scan Docker image with trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: '${{ env.IMAGE_REF }}'
-          # format: 'table'
-          # exit-code: '1'
-          # ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN'
-          format: 'sarif'
-          output: 'trivy-results-image.sarif'
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-      - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-results-image.sarif'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        
+        if: github.actor != 'github-actions[bot]'
 
-      - name: Push Docker image to GitHub Container Registry
-        if: github.ref == 'refs/heads/main'
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_APP_DEPENDABOT_PRIVATE_KEY }}
+        if: github.actor == 'github-actions[bot]'
+
+      - name: Set Docker image tag
         run: |
-          docker push ${{ env.IMAGE_REF }}
-          docker push ${{ env.IMAGE_LATEST }}
+          TAG=$(date +%Y.%m%d.%H%M%S)
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "CONTAINER_IMAGE=${{ vars.CONTAINER_REGISTRY }}/${{ github.repository }}-${{ matrix.kubectl-version }}" >> "$GITHUB_ENV"
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64, linux/arm64
+          file: ${{ env.DOCKERFILE }}
+          push: true
+          tags: |
+            ${{ env.CONTAINER_IMAGE }}-dev:${{ env.TAG }}
+          build-args: |
+            KUBECTL_VERSION=${{ matrix.kubectl-version }}
+        if: github.ref != 'refs/heads/main'
 
+      - name: Scan Docker image with trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.CONTAINER_IMAGE }}-dev:${{ env.TAG }}'
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          format: 'table'
+          exit-code: '0'
+        if: github.ref != 'refs/heads/main'
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64, linux/arm64
+          file: ${{ env.DOCKERFILE }}
+          push: true
+          tags: |
+            ${{ env.CONTAINER_IMAGE }}:${{ env.TAG }}
+            ${{ env.CONTAINER_IMAGE }}:latest
+          build-args: |
+            KUBECTL_VERSION=${{ matrix.kubectl-version }}
+        if: github.ref == 'refs/heads/main'
+
+
+      - name: Scan Docker image with trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.CONTAINER_IMAGE }}:${{ env.TAG }}'
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          format: 'sarif'
+          output: 'trivy-results-image.sarif'
+          exit-code: '0'
+        if: github.ref == 'refs/heads/main'
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results-image.sarif'
+        if: github.ref == 'refs/heads/main'
