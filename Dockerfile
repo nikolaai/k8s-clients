@@ -26,6 +26,8 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
     && ./get_helm.sh \
     && rm get_helm.sh
 
+# test
+
 # Switch to the "runner" user
 USER runner
 
