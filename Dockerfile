@@ -1,5 +1,5 @@
 # Use the Alpine Linux base image
-FROM alpine:3.20.3
+FROM alpine:3.21.0
 
 # Install the required packages (curl, kubectl, and helm)
 # hadolint ignore=DL3018
